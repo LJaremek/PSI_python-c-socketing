@@ -31,7 +31,8 @@ int main() {
     len = sizeof(cliaddr);
 
     while (1) {
-        recvfrom(sock, (char *) buffer, MAXDATA, 0, (struct sockaddr *) &cliaddr, &len);
+        int received = recvfrom(sock, (char *) buffer, MAXDATA, 0, (struct sockaddr *) &cliaddr, &len);
+        buffer[received] = '\0';
         printf("Client : %s\n", buffer);
     }
 
