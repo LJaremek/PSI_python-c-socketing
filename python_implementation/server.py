@@ -1,4 +1,4 @@
-import socket; 
+import socket
 
 HOSTNAME, PORT, MAXDATA = "127.0.0.1", 8081, 1024
 
