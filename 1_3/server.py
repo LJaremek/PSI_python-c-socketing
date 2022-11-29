@@ -10,7 +10,7 @@ def main():
         s.bind((HOSTNAME, PORT))
         while True:
             data = s.recvfrom(MAXDATA)
-            result = struct.unpack("!l4xh9s5x", data[0])
+            result = struct.unpack("!l4xh10s4x", data[0])
             print(result)
 
 
