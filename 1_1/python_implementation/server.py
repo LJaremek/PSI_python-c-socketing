@@ -7,7 +7,7 @@ def main():
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
         s.bind((HOSTNAME, PORT))
         while True:
-            print(s.recvfrom(MAXDATA)[0].decode("utf-8"))
+            print(f"Python server received : {s.recvfrom(MAXDATA)[0].decode('utf-8')}")
 
 
 if __name__ == "__main__":

@@ -33,7 +33,7 @@ int main() {
     while (1) {
         int received = recvfrom(sock, (char *) buffer, MAXDATA, 0, (struct sockaddr *) &cliaddr, &len);
         buffer[received] = '\0';
-        printf("Client : %s\n", buffer);
+        printf("C server received : %s\n", buffer);
     }
 
 }

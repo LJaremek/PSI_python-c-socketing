@@ -35,6 +35,9 @@ int main() {
                    sizeof(cliaddr)) == -1) {
             perror("sending datagram message failed");
         }
+		else {
+			printf("Client sent : %s\n", DATA);
+		}
     }
     close(sock);
     return 0;
