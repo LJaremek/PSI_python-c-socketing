@@ -18,7 +18,7 @@ def main():
         while True:
             data = s.recvfrom(MAXDATA)
             long, short, string = struct.unpack(FORMAT, data[0])
-            print(f"long: {long}, short: {short}, string: {string}")
+            print(f"Python server received :\tlong: {long}, short: {short}, string: {string}")
 
 
 if __name__ == "__main__":

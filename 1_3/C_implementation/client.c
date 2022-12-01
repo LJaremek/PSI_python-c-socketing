@@ -41,15 +41,18 @@ int main() {
     cliaddr.sin_port = htons(8081);
 
     struct test_struct a;
-    a.a = 2137;
-    a.b = 420;
-    strcpy(a.c, "John Paul");
+    a.a = 123456789;
+    a.b = 123;
+    strcpy(a.c, "Zadanie13");
     prepare_struct(&a);
 
     if (sendto(sock, &a, sizeof (struct test_struct), MSG_CONFIRM, (const struct sockaddr *) &cliaddr,
         sizeof(cliaddr)) == -1) {
         perror("sending datagram message failed");
     }
+	else {
+		printf("Client sent struct with string : %s\n", a.c);
+	}
 
     close(sock);
     return 0;
