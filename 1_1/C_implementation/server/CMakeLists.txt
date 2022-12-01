@@ -5,10 +5,6 @@ set(CMAKE_C_STANDARD 11)
 
 include_directories(.)
 
-add_executable(c_udp_client
-        UDPClient.c
-        )
-
 add_executable(c_udp_server
         UDPServer.c
         )
