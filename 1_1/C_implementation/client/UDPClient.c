@@ -7,7 +7,7 @@
 #include <netdb.h>
 
 #define DATA "hello from C client"
-#define HOSTNAME "127.0.0.1"
+#define HOSTNAME "127.0.0.1" // parametryzacja
 
 int main() {
     int sock;

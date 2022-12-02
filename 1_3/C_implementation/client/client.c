@@ -6,7 +6,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
-#define HOSTNAME "127.0.0.1"
+#define HOSTNAME "127.0.0.1" // parametryzacja
 
 struct test_struct {
     long int a;

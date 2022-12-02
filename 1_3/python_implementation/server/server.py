@@ -2,7 +2,7 @@ import socket
 import struct
 import io
 
-HOSTNAME, PORT, MAXDATA = "127.0.0.1", 8081, 1024
+HOSTNAME, PORT, MAXDATA = "0.0.0.0", 8081, 1024 # parametryzacja portu
 
 NETWORK_BYTE_ORDER = "!"
 PADDING = "4x"

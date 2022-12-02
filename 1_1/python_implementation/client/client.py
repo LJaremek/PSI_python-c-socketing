@@ -1,6 +1,6 @@
 import socket
 
-HOSTNAME, PORT, MAXDATA = "127.0.0.1", 8081, 1024
+HOSTNAME, PORT, MAXDATA = "172.21.14.2", 8081, 1024 # parametryzacja
 DATA = "hello from python client"
 
 
