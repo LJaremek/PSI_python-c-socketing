@@ -4,14 +4,19 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#define PORT 8081 // parametryzacja portu
 #define MAXDATA 1024
 
 
-int main() {
+int main(int argc, char** argv) {
     int sock, len;
     char buffer[MAXDATA];
     struct sockaddr_in servaddr, cliaddr;
+
+    if (argc < 2) {
+        printf("Usage: %s <PORT>\n", argv[0]);
+        return 1;
+    }
+    int port = atoi(argv[1]);
 
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock == -1) {
@@ -21,7 +26,7 @@ int main() {
 
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = INADDR_ANY;
-    servaddr.sin_port = htons(PORT);
+    servaddr.sin_port = htons(port);
 
     if (bind(sock, (const struct sockaddr *) &servaddr, sizeof(servaddr)) == -1) {
         perror("binding datagram socket failed");
