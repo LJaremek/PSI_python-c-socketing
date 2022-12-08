@@ -7,6 +7,10 @@
 
 #define MAXDATA 1024
 
+int isWorking() {
+    return 1;
+}
+
 
 int main(int argc, char **argv) {
 
@@ -25,7 +29,7 @@ int main(int argc, char **argv) {
     // create socket
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1) {
-        perror("socket creation failed");
+        perror("Socket creation failed");
         exit(1);
     }
 
@@ -36,15 +40,18 @@ int main(int argc, char **argv) {
 
     // bind socket with address structure
     if (bind(sock, (const struct sockaddr *) &servaddr, sizeof(servaddr)) == -1) {
-        perror("opening stream socket failed");
+        perror("Opening stream socket failed");
         exit(1);
     }
 
     // start listening
-    listen(sock, 5);
+    if (listen(sock, 5) == -1) {
+        perror("Listening initialize failed");
+        exit(1);
+    }
 
     // server should work till user interrupts it
-    while (1) {
+    while (isWorking()) {
 
         // accept connection from client
         conn = accept(sock, (struct sockaddr *) 0, 0);

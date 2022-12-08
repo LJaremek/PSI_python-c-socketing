@@ -4,6 +4,10 @@ import sys
 HOSTNAME, MAXDATA = "0.0.0.0", 1024
 
 
+def is_working():
+    return True
+
+
 def main(argc, argv):
     # get inital arguments
     if (argc < 2):
@@ -21,7 +25,7 @@ def main(argc, argv):
         s.listen(5)
 
         # server should work till user interrupts it
-        while True:
+        while is_working():
 
             # accept connection from client
             conn, addr = s.accept()
