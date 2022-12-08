@@ -53,6 +53,8 @@ int main(int argc, char **argv) {
 
     // send data to server
     if (write(sock, DATA, sizeof DATA) == -1) perror("Writing failed");
+    // logging sent data
+    else printf("Client sent : %s\n", DATA);
 
     // close socket after sending data
     close(sock);

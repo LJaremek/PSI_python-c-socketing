@@ -1,7 +1,7 @@
 import socket
 import sys
 
-MAXDATA, DATA = 1024, "hello from python tcp client"
+MAXDATA, DATA = 1024, "hello from python TCP client"
 
 
 def main(argc, argv):
@@ -18,7 +18,8 @@ def main(argc, argv):
         s.connect((hostname, port))
 
         # send data to server
-        s.sendto(DATA.encode('utf-8'), (hostname, port))
+        s.sendall(DATA.encode('utf-8'), (hostname, port))
+        print(f"Client sent : {DATA}")
 
 
 if __name__ == "__main__":

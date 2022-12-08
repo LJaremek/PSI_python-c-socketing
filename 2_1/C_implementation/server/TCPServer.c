@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
                 if (bytesRead == 0) {
                     printf("Connection ended \n");
                 } else {
-                    printf("%s\n", buffer);
+                    printf("C server received : %s\n", buffer);
                 }
             } while (bytesRead > 0);
 
