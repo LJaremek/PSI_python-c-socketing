@@ -22,10 +22,6 @@ def is_working():
     return True
 
 
-def is_data():
-    return True
-
-
 def main(argc: int, argv: list[str]) -> None:
     # get inital arguments
     if (argc < 2):
