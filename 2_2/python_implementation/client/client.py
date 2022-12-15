@@ -18,7 +18,7 @@ def main(argc, argv):
         s.connect((hostname, port))
 
         # send data to server
-        s.sendall(DATA.encode('utf-8'))
+        s.send(DATA.encode('utf-8'))
         print(f"Client sent : {DATA}")
 
 
