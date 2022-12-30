@@ -1,0 +1,15 @@
+{
+    "nodes": [
+        {
+            "node_name": "Luki",
+            "node_addr": "192.168.1.212",
+            "node_port": "4200" 
+        },
+
+        {
+            "node_name": "Bomba",
+            "node_addr": "192.168.1.211",
+            "node_port": "4200" 
+        }
+    ]
+}
