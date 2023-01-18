@@ -33,9 +33,7 @@ def tcp_server_thread_function(tcp_socket, node):
             conn.send(bytes("no such file in this node", 'utf-8'))
             continue
         with open(f"node_data/{filename}", "rb") as f:
-            # Read the file in chunks
             for chunk in iter(lambda: f.read(1024), b''):
-                # Send the chunk to the server
                 conn.sendall(chunk)
 
 
@@ -70,7 +68,7 @@ class Node:
         self._client_socket: Socket
         self._create_client_sockets(self._nodes)
         self._available_files: list[BroadcastMessage] = [
-            BroadcastMessage("192.168.1.115", self.downloaded_files())
+            BroadcastMessage("192.168.1.180", self.downloaded_files())
         ]
 
         self._available_file_names: list[str] = []
@@ -145,10 +143,7 @@ class Node:
         DATA = BroadcastMessage(self.node_addr, self.downloaded_files())
         for node in self._nodes:
             pb = pickle.dumps(DATA)
-            print(node["node_addr"])
-            print(node["node_port"])
             self._server_socket.sendto(pb, (node["node_addr"], node["node_port"]))
-        # TODO: przekazanie informacji o wgranym pliku innym węzłom
         ...
 
     def _list_file_owners(self, file_name: str) -> list[str]:
@@ -185,12 +180,11 @@ class Node:
         client_socket.sendall(pickle.dumps(request))
         with open(file_name, 'wb') as f:
             while True:
-                # Receive data from the client in chunks
                 data = client_socket.recv(1024)
-                if len(data) < 1024:
+                if not data:
                     break
-                # Write the received data to the new file
                 f.write(data)
+        client_socket.close()
         ...
 
     # def _list_nodes_with_file(self, file_name: str) -> list[str]:
