@@ -16,8 +16,13 @@ def udp_server_thread(udp_socket, node):
     while IS_UDP_THREAD_RUNNING:
         file_names = []
         data = pickle.loads(udp_socket.recv(1024))
-        node._available_files.append(BroadcastMessage(data.node_addr, data.resources))
-        for file in node._available_files:
+        if any(x.node_addr == data.node_addr for x in node.available_files):
+            for x in node.available_files:
+                if x.node_addr == data.node_addr:
+                    x.resources = data.resources
+        else:
+            node.available_files.append(BroadcastMessage(data.node_addr, data.resources))
+        for file in node.available_files:
             file_names.extend(file.resources)
         node._available_file_names = list(dict.fromkeys(file_names))
 
@@ -38,15 +43,17 @@ def tcp_server_thread_function(tcp_socket, node):
         conn.close()
 
 
-def tcp_client_thread_function(socket, file_name, node):
-    with open(file_name, 'wb') as f:
+def tcp_client_thread_function(client_socket, file_name, node):
+    with open(f"./node_data/{file_name}", 'wb') as f:
         while True:
-            data = socket.recv(1024)
+            data = client_socket.recv(1024)
             if not data:
                 break
             f.write(data)
-    node._files_during_download.remove(file_name)
-    socket.close()
+    node._file_during_download = ""
+    client_socket.close()
+    data = BroadcastMessage(node.node_addr, node.downloaded_files())
+    node.update_file_list(data)
 
 
 class Socket(socket):
@@ -62,9 +69,9 @@ class Socket(socket):
 class Node:
     def __init__(
             self,
-            node_name: str = "node1",
-            node_addr: str = "0.0.0.0",
-            node_port: int = 4000,
+            node_name: str,
+            node_addr: str,
+            node_port: int,
             config_file_path: str = "config.json"
     ) -> None:
 
@@ -78,16 +85,17 @@ class Node:
 
         self._client_sockets: list[Socket] = []
         self._client_socket: Socket
-        self._create_client_sockets(self._nodes)
-        self._available_files: list[BroadcastMessage] = [
-            BroadcastMessage("192.168.1.180", self.downloaded_files())
-        ]
+        self.available_files: list[BroadcastMessage] = []
 
         self._available_file_names: list[str] = []
-        for file in self._available_files:
+        for file in self.available_files:
             self._available_file_names.extend(file.resources)
         self._available_file_names = list(dict.fromkeys(self._available_file_names))
-        self._files_during_download: list[str] = []
+        self._file_during_download: str = ""
+        self._packet_loss = False
+
+    def imitate_packet_loss(self) -> None:
+        self._packet_loss = True
 
     def kill_udp_thread(self):
         global IS_UDP_THREAD_RUNNING
@@ -117,30 +125,22 @@ class Node:
         tcp_server_thread = Thread(target=tcp_server_thread_function, args=(self._tcp_socket, self))
         tcp_server_thread.start()
 
-    def _create_client_sockets(self, client_nodes_data: list[dict]) -> None:
-        for node_data in client_nodes_data:
-            node_name = node_data["node_name"]
-            node_addr = node_data["node_addr"]
-            node_port = node_data["node_port"]
-
-            if node_name == self._server_socket.name:
-                continue
-
-            client_socket = Socket(node_name, AF_INET, SOCK_STREAM)
-            self._client_sockets.append(client_socket)
-            # client_socket.connect((node_addr, node_port))
-            # TODO: wywołanie connect z node_addr i node_port
-
-    def available_files(self) -> list[str]:
+    def get_available_files(self) -> list[str]:
         return self._available_file_names
-        # TODO: pobieranie dostępnych plików z innych węzłów (UDP)
-        ...
 
     def downloaded_files(self) -> list[str]:
         return [
             file_name for file_name in os.listdir("./node_data/")
             if file_name != ".gitkeep"
         ]
+
+    def update_file_list(self, data) -> None:
+        if not self._packet_loss:
+            for node in self._nodes:
+                pb = pickle.dumps(data)
+                self._server_socket.sendto(pb, (node["node_addr"], node["node_port"]))
+        else:
+            self._packet_loss = False
 
     def upload_file(self, file_path: str) -> None:
         if file_path[0] == "~":
@@ -153,16 +153,14 @@ class Node:
             print("File already exists")
             return
         shutil.copy(file_path, f"./node_data/{file_name}")
-        DATA = BroadcastMessage(self.node_addr, self.downloaded_files())
-        for node in self._nodes:
-            pb = pickle.dumps(DATA)
-            self._server_socket.sendto(pb, (node["node_addr"], node["node_port"]))
+        data = BroadcastMessage(self.node_addr, self.downloaded_files())
+        self.update_file_list(data)
         ...
 
     def _list_file_owners(self, file_name: str) -> list[str]:
         owners_addrs = []
         owners = []
-        for file in self._available_files:
+        for file in self.available_files:
             if file_name in file.resources:
                 owners_addrs.append(file.node_addr)
         for node in self._nodes:
@@ -171,9 +169,9 @@ class Node:
         return owners
 
     def download_file(self, file_name: str) -> None:
-        # if file_name in self.downloaded_files():
-        #     print("File already exists")
-        #     return
+        if file_name in self.downloaded_files():
+            print("File already exists")
+            return
         if file_name not in self._available_file_names:
             print("File does not exist")
             return None
@@ -191,17 +189,12 @@ class Node:
         client_socket = Socket(node_name, AF_INET, SOCK_STREAM)
         client_socket.connect((node_addr, node_port))
         client_socket.sendall(pickle.dumps(request))
-        self._files_during_download.append(file_name)
+        self._file_during_download = file_name
         tcp_server_thread = Thread(target=tcp_client_thread_function, args=(client_socket, file_name, self))
-
         tcp_server_thread.start()
 
-        ...
-
-    # def _list_nodes_with_file(self, file_name: str) -> list[str]:
-
     def download_progress(self, file_name) -> str:
-        if file_name not in self._files_during_download and file_name not in self.downloaded_files():
+        if file_name != self._file_during_download and file_name not in self.downloaded_files():
             return "File is not being downloaded"
         if file_name in self.downloaded_files():
             return "File is already downloaded"

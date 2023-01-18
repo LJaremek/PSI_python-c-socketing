@@ -20,7 +20,7 @@ class P2PShell(Cmd):
         print("List all files located in local node")
 
     def do_available_files(self, arg):
-        print(self.node.available_files())
+        print(self.node.get_available_files())
 
     def help_available_files(self):
         print("List all files located in all nodes")
@@ -51,6 +51,12 @@ class P2PShell(Cmd):
 
     def help_download_progress(self):
         print("Download progress")
+
+    def do_imitate_packet_loss(self, arg):
+        self.node.imitate_packet_loss()
+
+    def help_imitate_packet_loss(self):
+        print("Imitate UDP packet loss")
 
     def do_exit(self, arg):
         print("Bye")
