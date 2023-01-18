@@ -22,6 +22,22 @@ def udp_server_thread(udp_socket, node):
         node._available_file_names = list(dict.fromkeys(file_names))
 
 
+def tcp_server_thread_function(tcp_socket, node):
+    while True:
+        tcp_socket.listen()
+        conn, addr = tcp_socket.accept()
+        data = conn.recv(1024)
+        request = pickle.loads(data)
+        filename = request.filename
+        if filename not in node.downloaded_files():
+            conn.send(bytes("no such file in this node", 'utf-8'))
+            continue
+        file = open(f"node_data/{filename}", "rb")
+        file_content = file.read()
+        conn.sendall(file_content)
+        file.close()
+
+
 class Socket(socket):
     def __init__(self, node_name: str, *args, **kwargs) -> None:
         super(Socket, self).__init__(*args, **kwargs)
@@ -35,20 +51,22 @@ class Socket(socket):
 class Node:
     def __init__(
             self,
-            node_name: str,
-            node_addr: str,
-            node_port: int,
+            node_name: str = "node1",
+            node_addr: str = "0.0.0.0",
+            node_port: int = 4000,
             config_file_path: str = "config.json"
     ) -> None:
 
         self.node_addr = node_addr
         self._config_data = self._read_config_file(config_file_path)
         self._nodes: list[dict] = self._config_data["nodes"]
+        self._tcp_socket: Socket
 
         self.udp_thread = None
         self._create_server_socket(node_name, node_addr, node_port)
 
         self._client_sockets: list[Socket] = []
+        self._client_socket: Socket
         self._create_client_sockets(self._nodes)
         self._available_files: list[BroadcastMessage] = [
             BroadcastMessage("192.168.1.180", self.downloaded_files())
@@ -81,6 +99,12 @@ class Node:
         self._server_socket.bind((node_addr, node_port))
         self.udp_thread = Thread(target=udp_server_thread, args=(self._server_socket, self))
         self.udp_thread.start()
+
+        self._tcp_socket = Socket(node_name, AF_INET, SOCK_STREAM)
+        self._tcp_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        self._tcp_socket.bind((node_addr, node_port))
+        tcp_server_thread = Thread(target=tcp_server_thread_function, args=(self._tcp_socket, self))
+        tcp_server_thread.start()
 
     def _create_client_sockets(self, client_nodes_data: list[dict]) -> None:
         for node_data in client_nodes_data:
@@ -154,14 +178,24 @@ class Node:
             if node["node_name"] == node_name:
                 node_addr = node["node_addr"]
                 node_port = node["node_port"]
-        DownloadRequest(file_name)
-        print(file_name, node_name, node_addr, node_port)
-
         request = DownloadRequest(file_name)
-        print(request.filename)
-        # TODO: sprawdzenie czy plik istnieje,
-        #       jeśli tak to pobranie go (nie UDP)
+
+        client_socket = Socket(node_name, AF_INET, SOCK_STREAM)
+        client_socket.connect((node_addr, node_port))
+        client_socket.sendall(pickle.dumps(request))
+        file_content = b''
+        while True:
+            part = client_socket.recv(1024)
+            file_content += part
+            if len(part) < 1024:
+                break
+        file = open(file_name, "wb")
+        file.write(file_content)
+        file.close()
         ...
+
+    # def _list_nodes_with_file(self, file_name: str) -> list[str]:
+        
 
     def download_progress(self) -> float:
         # TODO: progres pobierania pliku - float w zkaresie od 0 do 1
