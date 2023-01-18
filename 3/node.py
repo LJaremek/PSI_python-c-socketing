@@ -27,13 +27,15 @@ def tcp_server_thread_function(tcp_socket, node):
         tcp_socket.listen()
         conn, addr = tcp_socket.accept()
         data = conn.recv(1024)
-        request = DownloadRequest(data)
-        filename = request.filename.decode("utf-8").strip()
-        print(node.downloaded_files())
-        print(f"filename: {filename}")
+        request = pickle.loads(data)
+        filename = request.filename
         if filename not in node.downloaded_files():
-            conn.send("no such file in this node")
-        # TODO wysyłka pliku
+            conn.send(bytes("no such file in this node", 'utf-8'))
+            continue
+        file = open(f"node_data/{filename}", "rb")
+        file_content = file.read()
+        conn.sendall(file_content)
+        file.close()
 
 
 class Socket(socket):
@@ -64,6 +66,7 @@ class Node:
         self._create_server_socket(node_name, node_addr, node_port)
 
         self._client_sockets: list[Socket] = []
+        self._client_socket: Socket
         self._create_client_sockets(self._nodes)
         self._available_files: list[BroadcastMessage] = [
             BroadcastMessage("192.168.1.180", self.downloaded_files())
@@ -175,16 +178,20 @@ class Node:
             if node["node_name"] == node_name:
                 node_addr = node["node_addr"]
                 node_port = node["node_port"]
-        DownloadRequest(file_name)
-        print(file_name, node_name, node_addr, node_port)
-
         request = DownloadRequest(file_name)
-        print(request.filename)
 
-        address = "192.168.1.180"
-
-        # TODO: sprawdzenie czy plik istnieje,
-        #       jeśli tak to pobranie go (nie UDP)
+        client_socket = Socket(node_name, AF_INET, SOCK_STREAM)
+        client_socket.connect((node_addr, node_port))
+        client_socket.sendall(pickle.dumps(request))
+        file_content = b''
+        while True:
+            part = client_socket.recv(1024)
+            file_content += part
+            if len(part) < 1024:
+                break
+        file = open(file_name, "wb")
+        file.write(file_content)
+        file.close()
         ...
 
     # def _list_nodes_with_file(self, file_name: str) -> list[str]:
