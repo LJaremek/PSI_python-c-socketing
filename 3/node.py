@@ -8,12 +8,18 @@ import shutil
 
 from datatypes import DownloadRequest, BroadcastMessage
 
+IS_UDP_THREAD_RUNNING = True
 
-def udp_server_thread(udp_socket):
-    while True:
+
+def udp_server_thread(udp_socket, node):
+    global IS_UDP_THREAD_RUNNING
+    while IS_UDP_THREAD_RUNNING:
+        file_names = []
         data = pickle.loads(udp_socket.recv(1024))
-        print(f"Python server received : {data.node_addr} {data.resources}")
-        # TODO handle data
+        node._available_files.append(BroadcastMessage(data.node_addr, data.resources))
+        for file in node._available_files:
+            file_names.extend(file.resources)
+        node._available_file_names = list(dict.fromkeys(file_names))
 
 
 class Socket(socket):
@@ -39,10 +45,24 @@ class Node:
         self._config_data = self._read_config_file(config_file_path)
         self._nodes: list[dict] = self._config_data["nodes"]
 
+        self.udp_thread = None
         self._create_server_socket(node_name, node_addr, node_port)
 
         self._client_sockets: list[Socket] = []
         self._create_client_sockets(self._nodes)
+        self._available_files: list[BroadcastMessage] = [
+            BroadcastMessage("192.168.1.180", self.downloaded_files())
+        ]
+
+        self._available_file_names: list[str] = []
+        for file in self._available_files:
+            self._available_file_names.extend(file.resources)
+        self._available_file_names = list(dict.fromkeys(self._available_file_names))
+
+    def kill_udp_thread(self):
+        global IS_UDP_THREAD_RUNNING
+        IS_UDP_THREAD_RUNNING = False
+
 
     def _read_config_file(self, config_file_path: str) -> list[dict]:
         with open(config_file_path, "r", -1, "utf-8") as f:
@@ -59,8 +79,8 @@ class Node:
         self._server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self._server_socket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
         self._server_socket.bind((node_addr, node_port))
-        server_thread = Thread(target=udp_server_thread, args=(self._server_socket,))
-        server_thread.start()
+        self.udp_thread = Thread(target=udp_server_thread, args=(self._server_socket, self))
+        self.udp_thread.start()
 
     def _create_client_sockets(self, client_nodes_data: list[dict]) -> None:
         for node_data in client_nodes_data:
@@ -77,9 +97,7 @@ class Node:
             # TODO: wywołanie connect z node_addr i node_port
 
     def available_files(self) -> list[str]:
-        rest_resources = BroadcastMessage("127.0.0.1:4200", self.downloaded_files())
-        print(rest_resources.node_addr)
-        print(rest_resources.resources)
+        return self._available_file_names
         # TODO: pobieranie dostępnych plików z innych węzłów (UDP)
         ...
 
@@ -109,7 +127,36 @@ class Node:
         # TODO: przekazanie informacji o wgranym pliku innym węzłom
         ...
 
-    def download_file(self, file_name: str, node_name: str) -> None:
+    def _list_file_owners(self, file_name: str) -> list[str]:
+        owners_addrs = []
+        owners = []
+        for file in self._available_files:
+            if file_name in file.resources:
+                owners_addrs.append(file.node_addr)
+        for node in self._nodes:
+            if node["node_addr"] in owners_addrs:
+                owners.append(node["node_name"])
+        return owners
+
+    def download_file(self, file_name: str) -> None:
+        # if file_name in self.downloaded_files():
+        #     print("File already exists")
+        #     return
+        if file_name not in self._available_file_names:
+            print("File does not exist")
+            return None
+        print(self._list_file_owners(file_name))
+        node_name = input("Choose node to download from: ")
+        if node_name not in self._list_file_owners(file_name):
+            print("Wrong node name")
+            return None
+        for node in self._nodes:
+            if node["node_name"] == node_name:
+                node_addr = node["node_addr"]
+                node_port = node["node_port"]
+        DownloadRequest(file_name)
+        print(file_name, node_name, node_addr, node_port)
+
         request = DownloadRequest(file_name)
         print(request.filename)
         # TODO: sprawdzenie czy plik istnieje,
