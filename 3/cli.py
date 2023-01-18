@@ -16,7 +16,7 @@ class P2PShell(Cmd):
         print("List all files located in local node")
 
     def do_available_files(self, arg):
-        self.node.available_files()
+        print(self.node.available_files())
 
     def help_available_files(self):
         print("List all files located in all nodes")
@@ -25,8 +25,7 @@ class P2PShell(Cmd):
         if arg == '':
             print("Please provide file name")
             return
-        print("Downloading file")
-        self.node.download_file(arg, "test")
+        self.node.download_file(arg)
 
     def help_download_file(self):
         print("Download file from the network")
@@ -49,6 +48,7 @@ class P2PShell(Cmd):
 
     def do_exit(self, arg):
         print("Bye")
+        self.node.kill_udp_thread()
         return True
 
     def help_exit(self):
