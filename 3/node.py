@@ -29,9 +29,9 @@ class Socket(socket):
 class Node:
     def __init__(
             self,
-            node_name: str,
-            node_addr: str,
-            node_port: int,
+            node_name: str = "node1",
+            node_addr: str = "0.0.0.0",
+            node_port: int = 4000,
             config_file_path: str = "config.json"
     ) -> None:
 
@@ -115,6 +115,9 @@ class Node:
         # TODO: sprawdzenie czy plik istnieje,
         #       jeśli tak to pobranie go (nie UDP)
         ...
+
+    # def _list_nodes_with_file(self, file_name: str) -> list[str]:
+        
 
     def download_progress(self) -> float:
         # TODO: progres pobierania pliku - float w zkaresie od 0 do 1
