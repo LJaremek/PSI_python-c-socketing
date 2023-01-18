@@ -32,10 +32,11 @@ def tcp_server_thread_function(tcp_socket, node):
         if filename not in node.downloaded_files():
             conn.send(bytes("no such file in this node", 'utf-8'))
             continue
-        file = open(f"node_data/{filename}", "rb")
-        file_content = file.read()
-        conn.sendall(file_content)
-        file.close()
+        with open(f"node_data/{filename}", "rb") as f:
+            # Read the file in chunks
+            for chunk in iter(lambda: f.read(1024), b''):
+                # Send the chunk to the server
+                conn.sendall(chunk)
 
 
 class Socket(socket):
@@ -69,7 +70,7 @@ class Node:
         self._client_socket: Socket
         self._create_client_sockets(self._nodes)
         self._available_files: list[BroadcastMessage] = [
-            BroadcastMessage("192.168.1.180", self.downloaded_files())
+            BroadcastMessage("192.168.1.115", self.downloaded_files())
         ]
 
         self._available_file_names: list[str] = []
@@ -80,7 +81,6 @@ class Node:
     def kill_udp_thread(self):
         global IS_UDP_THREAD_RUNNING
         IS_UDP_THREAD_RUNNING = False
-
 
     def _read_config_file(self, config_file_path: str) -> list[dict]:
         with open(config_file_path, "r", -1, "utf-8") as f:
@@ -183,19 +183,17 @@ class Node:
         client_socket = Socket(node_name, AF_INET, SOCK_STREAM)
         client_socket.connect((node_addr, node_port))
         client_socket.sendall(pickle.dumps(request))
-        file_content = b''
-        while True:
-            part = client_socket.recv(1024)
-            file_content += part
-            if len(part) < 1024:
-                break
-        file = open(file_name, "wb")
-        file.write(file_content)
-        file.close()
+        with open(file_name, 'wb') as f:
+            while True:
+                # Receive data from the client in chunks
+                data = client_socket.recv(1024)
+                if len(data) < 1024:
+                    break
+                # Write the received data to the new file
+                f.write(data)
         ...
 
     # def _list_nodes_with_file(self, file_name: str) -> list[str]:
-        
 
     def download_progress(self) -> float:
         # TODO: progres pobierania pliku - float w zkaresie od 0 do 1
