@@ -6,7 +6,7 @@ from node import Node
 class P2PShell(Cmd):
     prompt = '> '
     intro = "Welcome! Type ? to list commands"
-    node = Node("Bomba", "192.168.1.180", 4200)
+    node = Node("Radkoski", "192.168.1.115", 4200)
 
     def do_downloaded_files(self, arg):
         for file in self.node.downloaded_files():

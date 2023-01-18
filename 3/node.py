@@ -35,6 +35,7 @@ def tcp_server_thread_function(tcp_socket, node):
         with open(f"node_data/{filename}", "rb") as f:
             for chunk in iter(lambda: f.read(1024), b''):
                 conn.sendall(chunk)
+        conn.close()
 
 
 class Socket(socket):
