@@ -16,6 +16,20 @@ def udp_server_thread(udp_socket):
         # TODO handle data
 
 
+def tcp_server_thread_function(tcp_socket, node):
+    while True:
+        tcp_socket.listen()
+        conn, addr = tcp_socket.accept()
+        data = conn.recv(1024)
+        request = DownloadRequest(data)
+        filename = request.filename.decode("utf-8").strip()
+        print(node.downloaded_files())
+        print(f"filename: {filename}")
+        if filename not in node.downloaded_files():
+            conn.send("no such file in this node")
+        # TODO wysyłka pliku
+
+
 class Socket(socket):
     def __init__(self, node_name: str, *args, **kwargs) -> None:
         super(Socket, self).__init__(*args, **kwargs)
@@ -38,6 +52,7 @@ class Node:
         self.node_addr = node_addr
         self._config_data = self._read_config_file(config_file_path)
         self._nodes: list[dict] = self._config_data["nodes"]
+        self._tcp_socket: Socket
 
         self._create_server_socket(node_name, node_addr, node_port)
 
@@ -61,6 +76,12 @@ class Node:
         self._server_socket.bind((node_addr, node_port))
         server_thread = Thread(target=udp_server_thread, args=(self._server_socket,))
         server_thread.start()
+
+        self._tcp_socket = Socket(node_name, AF_INET, SOCK_STREAM)
+        self._tcp_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        self._tcp_socket.bind((node_addr, node_port))
+        tcp_server_thread = Thread(target=tcp_server_thread_function, args=(self._tcp_socket, self))
+        tcp_server_thread.start()
 
     def _create_client_sockets(self, client_nodes_data: list[dict]) -> None:
         for node_data in client_nodes_data:
@@ -112,6 +133,9 @@ class Node:
     def download_file(self, file_name: str, node_name: str) -> None:
         request = DownloadRequest(file_name)
         print(request.filename)
+
+        address = "192.168.1.180"
+
         # TODO: sprawdzenie czy plik istnieje,
         #       jeśli tak to pobranie go (nie UDP)
         ...
