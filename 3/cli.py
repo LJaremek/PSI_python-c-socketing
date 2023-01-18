@@ -44,8 +44,10 @@ class P2PShell(Cmd):
         print("Upload file to the network")
 
     def do_download_progress(self, arg):
-        print(arg)
-        print("Downloading progress")
+        if arg == '':
+            print("Please provide file name")
+            return
+        print(self.node.download_progress(arg))
 
     def help_download_progress(self):
         print("Download progress")

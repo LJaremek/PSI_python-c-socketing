@@ -38,6 +38,17 @@ def tcp_server_thread_function(tcp_socket, node):
         conn.close()
 
 
+def tcp_client_thread_function(socket, file_name, node):
+    with open(file_name, 'wb') as f:
+        while True:
+            data = socket.recv(1024)
+            if not data:
+                break
+            f.write(data)
+    node._files_during_download.remove(file_name)
+    socket.close()
+
+
 class Socket(socket):
     def __init__(self, node_name: str, *args, **kwargs) -> None:
         super(Socket, self).__init__(*args, **kwargs)
@@ -76,6 +87,7 @@ class Node:
         for file in self._available_files:
             self._available_file_names.extend(file.resources)
         self._available_file_names = list(dict.fromkeys(self._available_file_names))
+        self._files_during_download: list[str] = []
 
     def kill_udp_thread(self):
         global IS_UDP_THREAD_RUNNING
@@ -179,17 +191,18 @@ class Node:
         client_socket = Socket(node_name, AF_INET, SOCK_STREAM)
         client_socket.connect((node_addr, node_port))
         client_socket.sendall(pickle.dumps(request))
-        with open(file_name, 'wb') as f:
-            while True:
-                data = client_socket.recv(1024)
-                if not data:
-                    break
-                f.write(data)
-        client_socket.close()
+        self._files_during_download.append(file_name)
+        tcp_server_thread = Thread(target=tcp_client_thread_function, args=(client_socket, file_name, self))
+
+        tcp_server_thread.start()
+
         ...
 
     # def _list_nodes_with_file(self, file_name: str) -> list[str]:
 
-    def download_progress(self) -> float:
-        # TODO: progres pobierania pliku - float w zkaresie od 0 do 1
-        ...
+    def download_progress(self, file_name) -> str:
+        if file_name not in self._files_during_download and file_name not in self.downloaded_files():
+            return "File is not being downloaded"
+        if file_name in self.downloaded_files():
+            return "File is already downloaded"
+        return "File is being downloaded"
