@@ -1,3 +1,4 @@
+from threading import Thread
 import pickle
 from socket import AF_INET, SOCK_STREAM, SO_BROADCAST, SOL_SOCKET, SO_REUSEADDR, SOCK_DGRAM
 from socket import socket
@@ -6,6 +7,13 @@ import os
 import shutil
 
 from datatypes import DownloadRequest, BroadcastMessage
+
+
+def udp_server_thread(udp_socket):
+    while True:
+        data = pickle.loads(udp_socket.recv(1024))
+        print(f"Python server received : {data.node_addr} {data.resources}")
+        # TODO handle data
 
 
 class Socket(socket):
@@ -21,9 +29,9 @@ class Socket(socket):
 class Node:
     def __init__(
             self,
-            node_name: str = "node1",
-            node_addr: str = "127.0.0.1",
-            node_port: int = 4000,
+            node_name: str,
+            node_addr: str,
+            node_port: int,
             config_file_path: str = "config.json"
     ) -> None:
 
@@ -51,7 +59,8 @@ class Node:
         self._server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self._server_socket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
         self._server_socket.bind((node_addr, node_port))
-        # TODO: puścić server na Thread
+        server_thread = Thread(target=udp_server_thread, args=(self._server_socket,))
+        server_thread.start()
 
     def _create_client_sockets(self, client_nodes_data: list[dict]) -> None:
         for node_data in client_nodes_data:
@@ -94,6 +103,8 @@ class Node:
         DATA = BroadcastMessage(self.node_addr, self.downloaded_files())
         for node in self._nodes:
             pb = pickle.dumps(DATA)
+            print(node["node_addr"])
+            print(node["node_port"])
             self._server_socket.sendto(pb, (node["node_addr"], node["node_port"]))
         # TODO: przekazanie informacji o wgranym pliku innym węzłom
         ...
@@ -104,9 +115,6 @@ class Node:
         # TODO: sprawdzenie czy plik istnieje,
         #       jeśli tak to pobranie go (nie UDP)
         ...
-
-    def _list_nodes_with_file(self, file_name: str) -> list[str]:
-        
 
     def download_progress(self) -> float:
         # TODO: progres pobierania pliku - float w zkaresie od 0 do 1

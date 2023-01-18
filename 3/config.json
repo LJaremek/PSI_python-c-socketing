@@ -1,8 +1,8 @@
 {
     "nodes": [
         {
-            "node_name": "Test_node",
-            "node_addr": "127.0.0.1",
+            "node_name": "Bomba",
+            "node_addr": "192.168.1.180",
             "node_port": 4200
         }
     ]

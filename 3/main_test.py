@@ -1,5 +1,4 @@
 from cli import P2PShell
-from node import Node
 
 
 def main():
