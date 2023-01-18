@@ -1,12 +1,16 @@
 from cmd import Cmd
 
 from node import Node
+import json
 
 
 class P2PShell(Cmd):
     prompt = '> '
     intro = "Welcome! Type ? to list commands"
-    node = Node("Radkoski", "192.168.1.115", 4200)
+    config_file_path = "node_config.json"
+    with open(config_file_path, "r", -1, "utf-8") as f:
+        config = json.load(f)
+    node = Node(config["node_name"], config["node_addr"], config["node_port"])
 
     def do_downloaded_files(self, arg):
         for file in self.node.downloaded_files():
