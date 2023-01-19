@@ -29,7 +29,8 @@ class P2PShell(Cmd):
         if arg == '':
             print("Please provide file name")
             return
-        self.node.download_file(arg)
+        node_name, node_addr, node_port = self.node.choose_node_to_download_from(arg)
+        self.node.download_file(arg, node_name, node_addr, node_port)
 
     def help_download_file(self):
         print("Download file from the network")
