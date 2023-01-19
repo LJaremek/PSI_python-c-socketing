@@ -7,3 +7,4 @@
 /dataSources.local.xml
 /.idea
 /**/cmake-build-debug
+/3/__pycache__
