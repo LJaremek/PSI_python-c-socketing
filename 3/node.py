@@ -171,10 +171,6 @@ class Node:
             print("File already exists")
             return
         shutil.copy(file_path, f"./node_data/{file_name}")
-        # DATA = BroadcastMessage(self.node_addr, self.node_port, self.downloaded_files())
-        # for node in self._nodes:
-        #     pb = pickle.dumps(DATA)
-        #     self._server_socket.sendto(pb, (node["node_addr"], node["node_port"]))
         data = BroadcastMessage(self.node_addr, self.node_port, self.downloaded_files())
         self.update_file_list(data)
         ...
@@ -191,9 +187,6 @@ class Node:
         return owners
 
     def choose_node_to_download_from(self, file_name: str):
-        # if file_name in self.downloaded_files():
-        #     print("File already exists")
-        #     return
         if self._file_during_download != "":
             print(f"File {self._file_during_download} is being downloaded right now")
             return
@@ -235,8 +228,6 @@ class Node:
         else:
             print("This file is not available")
         ...
-
-    # def _list_nodes_with_file(self, file_name: str) -> list[str]:
 
     def download_progress(self, file_name) -> str:
         if file_name != self._file_during_download and file_name not in self.downloaded_files():
