@@ -13,14 +13,24 @@ class P2PShell(Cmd):
     node = Node(config["node_name"], config["node_addr"], config["node_port"])
 
     def do_downloaded_files(self, arg):
+        if len(self.node.downloaded_files()) == 0:
+            print("No files downloaded")
+            return
+        print("List of downloaded files:")
         for file in self.node.downloaded_files():
-            print(file)
+            print(f"-> {file}")
 
     def help_downloaded_files(self):
         print("List all files located in local node")
 
     def do_available_files(self, arg):
-        print(self.node.get_available_files())
+        available_files = self.node.get_available_files()
+        if len(available_files) == 0:
+            print("No files available")
+            return
+        print("List of available files:")
+        for file in self.node.get_available_files():
+            print(f"-> {file}")
 
     def help_available_files(self):
         print("List all files located in all nodes")

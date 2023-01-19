@@ -85,7 +85,7 @@ class Node:
 
         self._client_sockets: list[Socket] = []
         self._client_socket: Socket
-        self.available_files: list[BroadcastMessage] = []
+        self.available_files: list[BroadcastMessage] = [BroadcastMessage(node_addr, self.downloaded_files())]
 
         self._available_file_names: list[str] = []
         for file in self.available_files:
@@ -136,8 +136,8 @@ class Node:
 
     def update_file_list(self, data) -> None:
         if not self._packet_loss:
+            pb = pickle.dumps(data)
             for node in self._nodes:
-                pb = pickle.dumps(data)
                 self._server_socket.sendto(pb, (node["node_addr"], node["node_port"]))
         else:
             self._packet_loss = False
@@ -169,17 +169,25 @@ class Node:
         return owners
 
     def download_file(self, file_name: str) -> None:
+        if self._file_during_download != "":
+            print(f"File {self._file_during_download} is being downloaded right now")
+            return
         if file_name in self.downloaded_files():
             print("File already exists")
             return
         if file_name not in self._available_file_names:
             print("File does not exist")
             return None
-        print(self._list_file_owners(file_name))
-        node_name = input("Choose node to download from: ")
-        if node_name not in self._list_file_owners(file_name):
-            print("Wrong node name")
-            return None
+        print("Available file owners:")
+        for name in self._list_file_owners(file_name):
+            print(f"-> {name}")
+        is_correct_name = False
+        while not is_correct_name:
+            node_name = input("Choose node to download from: ")
+            if node_name not in self._list_file_owners(file_name):
+                print("Wrong node name")
+            else:
+                is_correct_name = True
         for node in self._nodes:
             if node["node_name"] == node_name:
                 node_addr = node["node_addr"]
