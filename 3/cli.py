@@ -13,14 +13,24 @@ class P2PShell(Cmd):
     node = Node(config["node_name"], config["node_addr"], config["node_port"])
 
     def do_downloaded_files(self, arg):
+        if len(self.node.downloaded_files()) == 0:
+            print("No files downloaded")
+            return
+        print("List of downloaded files:")
         for file in self.node.downloaded_files():
-            print(file)
+            print(f"-> {file}")
 
     def help_downloaded_files(self):
         print("List all files located in local node")
 
     def do_available_files(self, arg):
-        print(self.node.available_files())
+        available_files = self.node.get_available_files()
+        if len(available_files) == 0:
+            print("No files available")
+            return
+        print("List of available files:")
+        for file in self.node.get_available_files():
+            print(f"-> {file}")
 
     def help_available_files(self):
         print("List all files located in all nodes")
@@ -29,7 +39,10 @@ class P2PShell(Cmd):
         if arg == '':
             print("Please provide file name")
             return
-        node_name, node_addr, node_port = self.node.choose_node_to_download_from(arg)
+        node = self.node.choose_node_to_download_from(arg)
+        if not node:
+            return
+        node_name, node_addr, node_port = node
         self.node.download_file(arg, node_name, node_addr, node_port)
 
     def help_download_file(self):
@@ -52,6 +65,12 @@ class P2PShell(Cmd):
 
     def help_download_progress(self):
         print("Download progress")
+
+    def do_imitate_packet_loss(self, arg):
+        self.node.imitate_packet_loss()
+
+    def help_imitate_packet_loss(self):
+        print("Imitate UDP packet loss")
 
     def do_exit(self, arg):
         print("Bye")
