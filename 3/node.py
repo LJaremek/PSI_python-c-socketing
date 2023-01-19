@@ -77,6 +77,7 @@ class Node:
     ) -> None:
 
         self.node_addr = node_addr
+        self.node_port = node_port
         self._config_data = self._read_config_file(config_file_path)
         self._nodes: list[dict] = self._config_data["nodes"]
         self._tcp_socket: Socket
@@ -159,7 +160,7 @@ class Node:
             print("File already exists")
             return
         shutil.copy(file_path, f"./node_data/{file_name}")
-        DATA = BroadcastMessage(self.node_addr, self.downloaded_files())
+        DATA = BroadcastMessage(self.node_addr, self.node_port, self.downloaded_files())
         for node in self._nodes:
             pb = pickle.dumps(DATA)
             self._server_socket.sendto(pb, (node["node_addr"], node["node_port"]))
