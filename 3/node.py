@@ -9,13 +9,20 @@ import shutil
 from datatypes import DownloadRequest, BroadcastMessage, DownloadResponse
 
 IS_UDP_THREAD_RUNNING = True
+CHUNK_SIZE = 1024
 
 
 def udp_server_thread(udp_socket, node):
     global IS_UDP_THREAD_RUNNING
     while IS_UDP_THREAD_RUNNING:
         file_names = []
-        data = pickle.loads(udp_socket.recv(1024))
+        data_bytes = b''
+        while True:
+            chunk, _ = udp_socket.recvfrom(CHUNK_SIZE)
+            data_bytes += chunk
+            if len(chunk) < CHUNK_SIZE:
+                break
+        data = pickle.loads(data_bytes)
         if any(x.node_addr == data.node_addr for x in node.available_files):
             for x in node.available_files:
                 if x.node_addr == data.node_addr:
@@ -31,7 +38,7 @@ def tcp_server_thread_function(tcp_socket, node):
     while True:
         tcp_socket.listen()
         conn, addr = tcp_socket.accept()
-        data = conn.recv(1024)
+        data = conn.recv(CHUNK_SIZE)
         request = pickle.loads(data)
         filename = request.filename
         if filename not in node.downloaded_files():
@@ -46,7 +53,7 @@ def tcp_server_thread_function(tcp_socket, node):
             response = DownloadResponse(True, node.node_addr, node.node_port)
             conn.sendall(pickle.dumps(response))
             with open(f"node_data/{filename}", "rb") as f:
-                for chunk in iter(lambda: f.read(1024), b''):
+                for chunk in iter(lambda: f.read(CHUNK_SIZE), b''):
                     conn.sendall(chunk)
         conn.close()
 
@@ -54,7 +61,7 @@ def tcp_server_thread_function(tcp_socket, node):
 def tcp_client_thread_function(client_socket, file_name, node):
     with open(f"./node_data/{file_name}", 'wb') as f:
         while True:
-            data = client_socket.recv(1024)
+            data = client_socket.recv(CHUNK_SIZE)
             if not data:
                 break
             f.write(data)
@@ -146,8 +153,10 @@ class Node:
     def update_file_list(self, data) -> None:
         if not self._packet_loss:
             pb = pickle.dumps(data)
+            chunks = [pb[i:i+CHUNK_SIZE] for i in range(0, len(pb), CHUNK_SIZE)]
             for node in self._nodes:
-                self._server_socket.sendto(pb, (node["node_addr"], node["node_port"]))
+                for chunk in chunks:
+                    self._server_socket.sendto(chunk, (node["node_addr"], node["node_port"]))
         else:
             self._packet_loss = False
 
